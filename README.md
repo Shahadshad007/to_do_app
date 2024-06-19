@@ -1,0 +1,1 @@
+This is a feature-rich To-Do List application built using HTML, CSS, and JavaScript. It allows users to manage their tasks efficiently with features like dark mode, task prioritization, sorting, filtering, and responsive design. The application also highlights tasks that are due soon.
