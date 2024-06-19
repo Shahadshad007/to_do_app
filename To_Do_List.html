@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced To-Do List Application</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #b68f5d; /* Initial blue background color */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            transition: background-color 0.5s ease;
+        }
+
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 350px;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        input[type="text"], input[type="date"], select, textarea {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            width: calc(100% - 22px);
+        }
+
+        textarea {
+            resize: vertical;
+        }
+
+        button {
+            padding: 10px;
+            border: none;
+            background: #5cb85c;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #4cae4c;
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+            margin-top: 20px;
+        }
+
+        li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        li.completed {
+            text-decoration: line-through;
+            color: gray;
+        }
+
+        li button {
+            border: none;
+            background: none;
+            cursor: pointer;
+        }
+
+        li button.edit {
+            color: #f0ad4e;
+        }
+
+        li button.delete {
+            color: #d9534f;
+        }
+
+        li button.complete {
+            color: #5cb85c;
+        }
+
+        .filter-container {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+
+        .filter-container input[type="text"] {
+            width: 60%;
+        }
+
+        .filter-container select {
+            width: 35%;
+        }
+
+        .sort-container {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+
+        .sort-container select {
+            width: 48%;
+        }
+
+        .dark-mode-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #5cb85c;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .dark-mode-toggle:hover {
+            background: #4cae4c;
+        }
+
+        .dark-mode {
+            background-color: #333;
+            color: #fff;
+        }
+
+        .dark-mode .container {
+            background: #444;
+        }
+
+        .dark-mode input, .dark-mode textarea, .dark-mode select {
+            background: #555;
+            color: #fff;
+            border: 1px solid #666;
+        }
+
+        .dark-mode button {
+            background: #5cb85c;
+        }
+
+        .subtasks-container {
+            margin-top: 10px;
+        }
+
+        .subtasks-container input[type="text"] {
+            width: calc(100% - 22px);
+            margin-bottom: 10px;
+        }
+
+        .subtask {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .due-soon {
+            background-color: #ffeb3b;
+        }
+
+        /* Media queries for responsive background color changes */
+        @media (max-width: 1200px) {
+            body {
+                background-color: #e0f7fa;
+            }
+        }
+
+        @media (max-width: 992px) {
+            body {
+                background-color: #ffecb3;
+            }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                background-color: #d1c4e9;
+            }
+        }
+
+        @media (max-width: 576px) {
+            body {
+                background-color: #ffccbc;
+            }
+        }
+    </style>
+</head>
+<body>
+    <button class="dark-mode-toggle" id="dark-mode-toggle">Toggle Dark Mode</button>
+    <div class="container">
+        <h1>To-Do List</h1>
+        <form id="todo-form">
+            <input type="text" id="todo-input" placeholder="Add a new task" required>
+            <input type="date" id="todo-date" required>
+            <select id="todo-priority">
+                <option value="Low">Low</option>
+                <option value="Medium">Medium</option>
+                <option value="High">High</option>
+            </select>
+            <textarea id="todo-description" rows="3" placeholder="Task description"></textarea>
+            <button type="submit">Add</button>
+        </form>
+        <div class="filter-container">
+            <input type="text" id="search-input" placeholder="Search tasks">
+            <select id="filter-status">
+                <option value="all">All</option>
+                <option value="completed">Completed</option>
+                <option value="pending">Pending</option>
+            </select>
+        </div>
+        <div class="sort-container">
+            <select id="sort-date">
+                <option value="none">Sort by Date</option>
+                <option value="asc">Date Ascending</option>
+                <option value="desc">Date Descending</option>
+            </select>
+            <select id="sort-priority">
+                <option value="none">Sort by Priority</option>
+                <option value="asc">Priority Ascending</option>
+                <option value="desc">Priority Descending</option>
+            </select>
+        </div>
+        <ul id="todo-list"></ul>
+        <button id="clear-completed">Clear Completed Tasks</button>
+    </div>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const form = document.getElementById("todo-form");
+            const input = document.getElementById("todo-input");
+            const dateInput = document.getElementById("todo-date");
+            const prioritySelect = document.getElementById("todo-priority");
+            const descriptionInput = document.getElementById("todo-description");
+            const todoList = document.getElementById("todo-list");
+            const searchInput = document.getElementById("search-input");
+            const filterStatus = document.getElementById("filter-status");
+            const sortDate = document.getElementById("sort-date");
+            const sortPriority = document.getElementById("sort-priority");
+            const clearCompletedBtn = document.getElementById("clear-completed");
+            const darkModeToggle = document.getElementById("dark-mode-toggle");
+
+            let todos = JSON.parse(localStorage.getItem("todos")) || [];
+            let darkMode = JSON.parse(localStorage.getItem("darkMode")) || false;
+
+            function saveTodos() {
+                localStorage.setItem("todos", JSON.stringify(todos));
+            }
+
+            function saveDarkMode() {
+                localStorage.setItem("darkMode", JSON.stringify(darkMode));
+            }
+
+            function applyDarkMode() {
+                if (darkMode) {
+                    document.body.classList.add("dark-mode");
+                } else {
+                    document.body.classList.remove("dark-mode");
+                }
+            }
+
+            function renderTodos() {
+                const searchTerm = searchInput.value.toLowerCase();
+                const filter = filterStatus.value;
+                const sortByDate = sortDate.value;
+                const sortByPriority = sortPriority.value;
+
+                todoList.innerHTML = '';
+
+                let filteredTodos = todos.filter(todo => {
+                    const matchesSearch = todo.text.toLowerCase().includes(searchTerm);
+                    const matchesFilter = filter === 'all' || 
+                                          (filter === 'completed' && todo.completed) || 
+                                          (filter === 'pending' && !todo.completed);
+                    return matchesSearch && matchesFilter;
+                });
+
+                if (sortByDate !== 'none') {
+                    filteredTodos.sort((a, b) => {
+                        const dateA = new Date(a.dueDate);
+                        const dateB = new Date(b.dueDate);
+                        return sortByDate === 'asc' ? dateA - dateB : dateB - dateA;
+                    });
+                }
+
+                if (sortByPriority !== 'none') {
+                    const priorityMap = { "Low": 1, "Medium": 2, "High": 3 };
+                    filteredTodos.sort((a, b) => {
+                        return sortByPriority === 'asc' ? priorityMap[a.priority] - priorityMap[b.priority] : priorityMap[b.priority] - priorityMap[a.priority];
+                    });
+                }
+
+                filteredTodos.forEach((todo, index) => {
+                    const dueSoon = new Date(todo.dueDate) - new Date() < 24 * 60 * 60 * 1000 && !todo.completed;
+                    const li = document.createElement("li");
+                    li.className = `${todo.completed ? "completed" : ""} ${dueSoon ? "due-soon" : ""}`;
+                    li.innerHTML = `
+                        <span>${todo.text} - ${todo.dueDate} - ${todo.priority}</span>
+                        <div>
+                            <button class="complete" data-index="${index}">&#x2714;</button>
+                            <button class="edit" data-index="${index}">&#9998;</button>
+                            <button class="delete" data-index="${index}">&#10006;</button>
+                        </div>
+                    `;
+                    todoList.appendChild(li);
+                });
+            }
+
+            form.addEventListener("submit", function(event) {
+                event.preventDefault();
+                const text = input.value.trim();
+                const dueDate = dateInput.value;
+                const priority = prioritySelect.value;
+                const description = descriptionInput.value.trim();
+                if (text !== "" && dueDate !== "") {
+                    todos.push({ text, dueDate, priority, description, completed: false, subtasks: [] });
+                    input.value = '';
+                    dateInput.value = '';
+                    descriptionInput.value = '';
+                    saveTodos();
+                    renderTodos();
+                }
+            });
+
+            todoList.addEventListener("click", function(event) {
+                const target = event.target;
+                const index = target.dataset.index;
+                if (target.classList.contains("delete")) {
+                    todos.splice(index, 1);
+                } else if (target.classList.contains("complete")) {
+                    todos[index].completed = !todos[index].completed;
+                } else if (target.classList.contains("edit")) {
+                    const newText = prompt("Edit task:", todos[index].text);
+                    const newDate = prompt("Edit due date (YYYY-MM-DD):", todos[index].dueDate);
+                    const newPriority = prompt("Edit priority (Low, Medium, High):", todos[index].priority);
+                    const newDescription = prompt("Edit description:", todos[index].description);
+                    if (newText !== null && newText.trim() !== "") {
+                        todos[index].text = newText.trim();
+                    }
+                    if (newDate !== null && newDate.trim() !== "") {
+                        todos[index].dueDate = newDate.trim();
+                    }
+                    if (newPriority !== null && newPriority.trim() !== "") {
+                        todos[index].priority = newPriority.trim();
+                    }
+                    if (newDescription !== null && newDescription.trim() !== "") {
+                        todos[index].description = newDescription.trim();
+                    }
+                }
+                saveTodos();
+                renderTodos();
+            });
+
+            searchInput.addEventListener("input", renderTodos);
+            filterStatus.addEventListener("change", renderTodos);
+            sortDate.addEventListener("change", renderTodos);
+            sortPriority.addEventListener("change", renderTodos);
+
+            clearCompletedBtn.addEventListener("click", function() {
+                todos = todos.filter(todo => !todo.completed);
+                saveTodos();
+                renderTodos();
+            });
+
+            darkModeToggle.addEventListener("click", function() {
+                darkMode = !darkMode;
+                saveDarkMode();
+                applyDarkMode();
+            });
+
+            applyDarkMode();
+            renderTodos();
+        });
+    </script>
+</body>
+</html>
